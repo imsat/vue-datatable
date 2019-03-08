@@ -10660,3 +10660,21 @@ a.text-dark:focus {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
 }
 
+.table .sorting {
+  background-image: url("/images/sort_both.png");
+  background-repeat: no-repeat;
+  background-position: center right;
+}
+
+.table .sorting_asc {
+  background-image: url("/images/sort_asc.png");
+  background-repeat: no-repeat;
+  background-position: center right;
+}
+
+.table .sorting_desc {
+  background-image: url("/images/sort_desc.png");
+  background-repeat: no-repeat;
+  background-position: center right;
+}
+
