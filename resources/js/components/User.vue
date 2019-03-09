@@ -1,5 +1,23 @@
 <template>
 <div>
+    <div class="row">
+        <div class="float-left col-6">
+            <label class="form-inline">Show
+                <select v-model="tableData.length" @change="getUsers()" class="custom-select custom-select-sm form-control form-control-sm m-1">
+                    <option value="10" selected="selected">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+                entries</label>
+        </div>
+        <div class="col-6">
+            <label class="form-inline float-right">Search:
+                <input type="search" v-model="tableData.search" @input="getUsers()" class="form-control form-control-sm m-1" placeholder="" aria-controls="example">
+            </label>
+        </div>
+
+    </div>
     <datatable
         :columns="columns"
         :sortKey="sortKey"
@@ -16,7 +34,7 @@
     </datatable>
     <pagination
     :pagination="pagination"
-    @priv="getUsers(pagination.prevPageUrl)"
+    @prev="getUsers(pagination.prevPageUrl)"
     @next="getUsers(pagination.nextPageUrl)"
     >
     </pagination>
