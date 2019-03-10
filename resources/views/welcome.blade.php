@@ -8,7 +8,7 @@
                     <div class="card-header">Vue Datatable Develop</div>
 
                     <div class="card-body">
-                        <app-user-client-side></app-user-client-side>
+                        <app-user></app-user>
                     </div>
                 </div>
             </div>
