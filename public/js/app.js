@@ -1816,7 +1816,7 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 /* harmony default export */ __webpack_exports__["default"] = ({
-  props: ['pagination', 'client', 'filtered']
+  props: ['pagination', 'filtered']
 });
 
 /***/ }),
@@ -1875,6 +1875,7 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
+//
 
 
 /* harmony default export */ __webpack_exports__["default"] = ({
@@ -1884,10 +1885,7 @@ __webpack_require__.r(__webpack_exports__);
     Pagination: _Pagination__WEBPACK_IMPORTED_MODULE_1__["default"]
   },
   created: function created() {
-    this.getUsers(); // axios.get('/user', {params: this.tableData})
-    //     .then(res => {
-    //         console.log(res.data)
-    //     })
+    this.getUsers();
   },
   data: function data() {
     var sortOrders = {};
@@ -1895,7 +1893,8 @@ __webpack_require__.r(__webpack_exports__);
       width: '33%',
       label: 'Name',
       name: 'name'
-    }, {
+    }, //type: 'date', type: 'number'
+    {
       width: '33%',
       label: 'Email',
       name: 'email'
@@ -1912,20 +1911,16 @@ __webpack_require__.r(__webpack_exports__);
       columns: columns,
       sortKey: 'name',
       sortOrders: sortOrders,
+      length: 10,
+      search: '',
       tableData: {
-        draw: 0,
-        length: 10,
-        search: '',
-        column: 0,
-        dir: 'desc'
+        client: true
       },
       pagination: {
-        lastPage: '',
-        currentPage: '',
+        currentPage: 1,
         total: '',
-        lastPageUrl: '',
-        nextPageUrl: '',
-        prevPageUrl: '',
+        nextPage: '',
+        prevPage: '',
         from: '',
         to: ''
       }
@@ -1936,43 +1931,75 @@ __webpack_require__.r(__webpack_exports__);
       var _this = this;
 
       var url = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '/user';
-      this.tableData.draw++;
       axios.get(url, {
         params: this.tableData
       }).then(function (response) {
-        // console.log(response.data);
-        var data = response.data;
-
-        if (_this.tableData.draw == data.draw) {
-          _this.users = data.data.data;
-
-          _this.configPagination(data.data);
-        }
+        _this.users = response.data;
+        _this.pagination.total = _this.users.length;
       }).catch(function (errors) {
         console.log(errors);
       });
     },
-    configPagination: function configPagination(data) {
-      this.pagination.lastPage = data.last_page;
-      this.pagination.currentPage = data.current_page;
-      this.pagination.total = data.total;
-      this.pagination.lastPageUrl = data.last_page_url;
-      this.pagination.nextPageUrl = data.next_page_url;
-      this.pagination.prevPageUrl = data.prev_page_url;
-      this.pagination.from = data.from;
-      this.pagination.to = data.to;
+    paginate: function paginate(array, length, pageNumber) {
+      this.pagination.from = array.length ? (pageNumber - 1) * length + 1 : ' ';
+      this.pagination.to = pageNumber * length > array.length ? array.length : pageNumber * length;
+      this.pagination.prevPage = pageNumber > 1 ? pageNumber : '';
+      this.pagination.nextPage = array.length > this.pagination.to ? pageNumber + 1 : '';
+      return array.slice((pageNumber - 1) * length, pageNumber * length);
+    },
+    resetPagination: function resetPagination() {
+      this.pagination.currentPage = 1;
+      this.pagination.prevPage = '';
+      this.pagination.nextPage = '';
     },
     sortBy: function sortBy(key) {
+      this.resetPagination();
       this.sortKey = key;
       this.sortOrders[key] = this.sortOrders[key] * -1;
-      this.tableData.column = this.getIndex(this.columns, 'name', key);
-      this.tableData.dir = this.sortOrders[key] === 1 ? 'asc' : 'desc';
-      this.getUsers();
     },
     getIndex: function getIndex(array, key, value) {
       return array.findIndex(function (i) {
         return i[key] == value;
       });
+    }
+  },
+  computed: {
+    filteredUsers: function filteredUsers() {
+      var _this2 = this;
+
+      var users = this.users;
+
+      if (this.search) {
+        users = users.filter(function (row) {
+          return Object.keys(row).some(function (key) {
+            return String(row[key]).toLowerCase().indexOf(_this2.search.toLowerCase()) > -1;
+          });
+        });
+      }
+
+      var sortKey = this.sortKey;
+      var order = this.sortOrders[sortKey] || 1;
+
+      if (sortKey) {
+        users = users.slice().sort(function (a, b) {
+          var index = _this2.getIndex(_this2.columns, 'name', sortKey);
+
+          a = String(a[sortKey]).toLowerCase();
+          b = String(b[sortKey]).toLowerCase();
+
+          if (_this2.columns[index].type && _this2.columns[index].type === 'date') {
+            return (a === b ? 0 : new Date(a).getTime() > new Date(b).getTime() ? 1 : -1) * order;
+          } else if (_this2.columns[index].type && _this2.columns[index].type === 'number') {
+            return (+a === +b ? 0 : +a > +b ? 1 : -1) * order;
+          } else {
+            return (a === b ? 0 : a > b ? 1 : -1) * order;
+          }
+        });
+        return users;
+      }
+    },
+    paginated: function paginated() {
+      return this.paginate(this.filteredUsers, this.length, this.pagination.currentPage);
     }
   }
 });
@@ -37093,7 +37120,7 @@ var render = function() {
         "li",
         {
           staticClass: "page-item ",
-          class: { disabled: !_vm.pagination.prevPageUrl }
+          class: { disabled: !_vm.pagination.prevPage }
         },
         [
           _c(
@@ -37137,7 +37164,7 @@ var render = function() {
         "li",
         {
           staticClass: "page-item",
-          class: { disabled: !_vm.pagination.nextPageUrl }
+          class: { disabled: !_vm.pagination.nextPage }
         },
         [
           _c(
@@ -37186,7 +37213,7 @@ var render = function() {
       _c("div", { staticClass: "row" }, [
         _c("div", { staticClass: "float-left col-6" }, [
           _c("label", { staticClass: "form-inline" }, [
-            _vm._v("Show\n                "),
+            _vm._v("Show\r\n                "),
             _c(
               "select",
               {
@@ -37194,8 +37221,8 @@ var render = function() {
                   {
                     name: "model",
                     rawName: "v-model",
-                    value: _vm.tableData.length,
-                    expression: "tableData.length"
+                    value: _vm.length,
+                    expression: "length"
                   }
                 ],
                 staticClass:
@@ -37211,16 +37238,12 @@ var render = function() {
                           var val = "_value" in o ? o._value : o.value
                           return val
                         })
-                      _vm.$set(
-                        _vm.tableData,
-                        "length",
-                        $event.target.multiple
-                          ? $$selectedVal
-                          : $$selectedVal[0]
-                      )
+                      _vm.length = $event.target.multiple
+                        ? $$selectedVal
+                        : $$selectedVal[0]
                     },
                     function($event) {
-                      return _vm.getUsers()
+                      return _vm.resetPagination()
                     }
                   ]
                 }
@@ -37237,20 +37260,20 @@ var render = function() {
                 _c("option", { attrs: { value: "100" } }, [_vm._v("100")])
               ]
             ),
-            _vm._v("\n                entries")
+            _vm._v("\r\n                entries")
           ])
         ]),
         _vm._v(" "),
         _c("div", { staticClass: "col-6" }, [
           _c("label", { staticClass: "form-inline float-right" }, [
-            _vm._v("Search:\n                "),
+            _vm._v("Search:\r\n                "),
             _c("input", {
               directives: [
                 {
                   name: "model",
                   rawName: "v-model",
-                  value: _vm.tableData.search,
-                  expression: "tableData.search"
+                  value: _vm.search,
+                  expression: "search"
                 }
               ],
               staticClass: "form-control form-control-sm m-1",
@@ -37259,17 +37282,17 @@ var render = function() {
                 placeholder: "",
                 "aria-controls": "example"
               },
-              domProps: { value: _vm.tableData.search },
+              domProps: { value: _vm.search },
               on: {
                 input: [
                   function($event) {
                     if ($event.target.composing) {
                       return
                     }
-                    _vm.$set(_vm.tableData, "search", $event.target.value)
+                    _vm.search = $event.target.value
                   },
                   function($event) {
-                    return _vm.getUsers()
+                    return _vm.resetPagination()
                   }
                 ]
               }
@@ -37291,7 +37314,7 @@ var render = function() {
         [
           _c(
             "tbody",
-            _vm._l(_vm.users, function(user) {
+            _vm._l(_vm.paginated, function(user) {
               return _c("tr", { key: user.id }, [
                 _c("td", [_vm._v(_vm._s(user.name))]),
                 _vm._v(" "),
@@ -37306,13 +37329,13 @@ var render = function() {
       ),
       _vm._v(" "),
       _c("pagination", {
-        attrs: { pagination: _vm.pagination },
+        attrs: { pagination: _vm.pagination, client: true },
         on: {
           prev: function($event) {
-            return _vm.getUsers(_vm.pagination.prevPageUrl)
+            --_vm.pagination.currentPage
           },
           next: function($event) {
-            return _vm.getUsers(_vm.pagination.nextPageUrl)
+            ++_vm.pagination.currentPage
           }
         }
       })
@@ -49448,7 +49471,7 @@ __webpack_require__(/*! ./bootstrap */ "./resources/js/bootstrap.js");
 window.Vue = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.common.js"); // const files = require.context('./', true, /\.vue$/i);
 // files.keys().map(key => Vue.component(key.split('/').pop().split('.')[0], files(key).default));
 
-Vue.component('app-user', __webpack_require__(/*! ./components/User */ "./resources/js/components/User.vue").default);
+Vue.component('app-user-client-side', __webpack_require__(/*! ./components/User */ "./resources/js/components/User.vue").default);
 /**
  * Next, we will create a fresh Vue application instance and attach it to
  * the page. Then, you may begin adding components to this application
