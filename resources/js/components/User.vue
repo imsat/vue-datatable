@@ -3,7 +3,7 @@
     <div class="row">
         <div class="float-left col-6">
             <label class="form-inline">Show
-                <select v-model="tableData.length" @change="getUsers()" class="custom-select custom-select-sm form-control form-control-sm m-1">
+                <select v-model="length" @change="resetPagination()" class="custom-select custom-select-sm form-control form-control-sm m-1">
                     <option value="10" selected="selected">10</option>
                     <option value="25">25</option>
                     <option value="50">50</option>
@@ -13,7 +13,7 @@
         </div>
         <div class="col-6">
             <label class="form-inline float-right">Search:
-                <input type="search" v-model="tableData.search" @input="getUsers()" class="form-control form-control-sm m-1" placeholder="" aria-controls="example">
+                <input type="search" v-model="search" @input="resetPagination()" class="form-control form-control-sm m-1" placeholder="" aria-controls="example">
             </label>
         </div>
 
@@ -25,7 +25,7 @@
         @sort="sortBy"
     >
         <tbody>
-        <tr v-for="user in users" :key="user.id">
+        <tr v-for="user in paginated" :key="user.id">
             <td>{{user.name}}</td>
             <td>{{user.email}}</td>
             <td>{{user.type}}</td>
@@ -34,8 +34,9 @@
     </datatable>
     <pagination
     :pagination="pagination"
-    @prev="getUsers(pagination.prevPageUrl)"
-    @next="getUsers(pagination.nextPageUrl)"
+    :client="true"
+    @prev="--pagination.currentPage"
+    @next="++pagination.currentPage"
     >
     </pagination>
 </div>
@@ -52,16 +53,12 @@
         },
         created(){
             this.getUsers();
-            // axios.get('/user', {params: this.tableData})
-            //     .then(res => {
-            //         console.log(res.data)
-            //     })
 
         },
         data() {
             let sortOrders = {};
             let columns = [
-                {width: '33%', label: 'Name', name: 'name'},
+                {width: '33%', label: 'Name', name: 'name' }, //type: 'date', type: 'number'
                 {width: '33%', label: 'Email', name: 'email'},
                 {width: '33%', label: 'Type', name: 'type'}
             ];
@@ -73,20 +70,16 @@
                 columns: columns,
                 sortKey: 'name',
                 sortOrders: sortOrders,
+                length: 10,
+                search: '',
                 tableData: {
-                    draw: 0,
-                    length: 10,
-                    search: '',
-                    column: 0,
-                    dir: 'desc'
+                    client: true
                 },
                 pagination: {
-                    lastPage: '',
-                    currentPage: '',
+                    currentPage: 1,
                     total: '',
-                    lastPageUrl: '',
-                    nextPageUrl: '',
-                    prevPageUrl: '',
+                    nextPage: '',
+                    prevPage: '',
                     from: '',
                     to: '',
                 }
@@ -94,40 +87,68 @@
         },
         methods: {
             getUsers(url = '/user') {
-                this.tableData.draw++;
                 axios.get(url, {params: this.tableData})
                     .then(response => {
-                        // console.log(response.data);
-                        let data = response.data;
-                        if (this.tableData.draw == data.draw) {
-                            this.users = data.data.data;
-                            this.configPagination(data.data);
-                        }
+                        this.users = response.data;
+                        this.pagination.total = this.users.length;
                     })
                     .catch(errors => {
                         console.log(errors);
                     });
             },
-            configPagination(data) {
-                this.pagination.lastPage = data.last_page;
-                this.pagination.currentPage = data.current_page;
-                this.pagination.total = data.total;
-                this.pagination.lastPageUrl = data.last_page_url;
-                this.pagination.nextPageUrl = data.next_page_url;
-                this.pagination.prevPageUrl = data.prev_page_url;
-                this.pagination.from = data.from;
-                this.pagination.to = data.to;
+            paginate(array, length, pageNumber){
+                this.pagination.from = array.length ? ((pageNumber - 1) * length) +1 : ' ';
+                this.pagination.to = pageNumber * length > array.length ? array.length : pageNumber * length;
+                this.pagination.prevPage = pageNumber > 1 ? pageNumber: '';
+                this.pagination.nextPage = array.length > this.pagination.to ? pageNumber + 1: '';
+                return array.slice((pageNumber - 1) * length, pageNumber * length);
+            },
+            resetPagination(){
+                this.pagination.currentPage = 1;
+                this.pagination.prevPage = '';
+                this.pagination.nextPage = '';
             },
             sortBy(key) {
+                this.resetPagination();
                 this.sortKey = key;
                 this.sortOrders[key] = this.sortOrders[key] * -1;
-                this.tableData.column = this.getIndex(this.columns, 'name', key);
-                this.tableData.dir = this.sortOrders[key] === 1 ? 'asc' : 'desc';
-                this.getUsers();
             },
             getIndex(array, key, value) {
                 return array.findIndex(i => i[key] == value)
             },
+        },
+        computed: {
+            filteredUsers(){
+                let users = this.users;
+                if(this.search){
+                    users = users.filter((row) => {
+                        return Object.keys(row).some((key) => {
+                            return String(row[key]).toLowerCase().indexOf(this.search.toLowerCase()) > -1;
+                        })
+                    })
+                }
+                let sortKey = this.sortKey;
+                let order = this.sortOrders[sortKey] || 1;
+                if(sortKey){
+                    users = users.slice().sort((a, b) => {
+                        let index = this.getIndex(this.columns, 'name', sortKey);
+                        a = String(a[sortKey]).toLowerCase();
+                        b = String(b[sortKey]).toLowerCase();
+                        if(this.columns[index].type && this.columns[index].type === 'date') {
+                            return (a === b ? 0 : new Date(a).getTime() > new Date(b).getTime() ? 1 : -1) * order
+                        }else if(this.columns[index].type && this.columns[index].type === 'number'){
+                            return (+a === +b ? 0 : +a > +b ? 1 : -1) * order
+                        }else{
+                            return (a === b ? 0 : a > b ? 1 : -1) * order
+                        }
+                    });
+                    return users;
+                }
+
+            },
+            paginated(){
+                return this.paginate(this.filteredUsers, this.length, this.pagination.currentPage);
+            }
         }
 
     }
