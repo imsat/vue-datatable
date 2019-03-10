@@ -5,7 +5,7 @@
         <div class="row justify-content-center">
             <div class="col-md-8">
                 <div class="card">
-                    <div class="card-header">Vue Datatable Develop</div>
+                    <div class="card-header">Vue Datatable Client Side</div>
 
                     <div class="card-body">
                         <app-user-client-side></app-user-client-side>
