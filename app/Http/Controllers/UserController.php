@@ -14,10 +14,9 @@ class UserController extends Controller
      */
     public function index(Request $request)
     {
-//        return $request->all();
-//        if ( $request->input('client') ) {
-//            return User::select('id', 'name', 'email', 'type')->get();
-//        }
+        if ( $request->input('client') ) {
+            return User::select('id', 'name', 'email', 'type')->get();
+        }
 
         $columns = ['name', 'email', 'type'];
 
