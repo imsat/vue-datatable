@@ -37213,7 +37213,7 @@ var render = function() {
       _c("div", { staticClass: "row" }, [
         _c("div", { staticClass: "float-left col-6" }, [
           _c("label", { staticClass: "form-inline" }, [
-            _vm._v("Show\n                "),
+            _vm._v("Show\r\n                "),
             _c(
               "select",
               {
@@ -37260,13 +37260,13 @@ var render = function() {
                 _c("option", { attrs: { value: "100" } }, [_vm._v("100")])
               ]
             ),
-            _vm._v("\n                entries")
+            _vm._v("\r\n                entries")
           ])
         ]),
         _vm._v(" "),
         _c("div", { staticClass: "col-6" }, [
           _c("label", { staticClass: "form-inline float-right" }, [
-            _vm._v("Search:\n                "),
+            _vm._v("Search:\r\n                "),
             _c("input", {
               directives: [
                 {
